@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/two.js/0.8.0/two.min.js"></script>
+  </head>
+  <body>
+    <script>
+      var two = new Two({
+        fullscreen: true,
+        autostart: true
+      }).appendTo(document.body);
+      var rect = two.makeRectangle(two.width / 2, two.height / 2, 75, 75);
+      two.bind('update', function() {
+        rect.rotation += 0.0125;
+      });
+    </script>
+  </body>
+</html>

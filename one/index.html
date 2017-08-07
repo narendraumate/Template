@@ -1,0 +1,128 @@
+<doctype html>
+<html>
+<head>
+  <title>WebGL</title>
+  <script id="vertexShader" type="x-shader/x-vertex">
+      attribute vec3 pos;
+      attribute vec4 clr;
+      uniform mat4 trans;
+      varying vec4 vcolor;
+      void main() {
+        gl_Position = trans * vec4(pos, 1);
+        vcolor = clr;
+      }
+    </script>
+  <script id="fragmentShader" type="x-shader/x-fragment">
+      precision mediump float;
+      varying vec4 vcolor;
+      void main() {
+        gl_FragColor = vcolor;
+      }
+    </script>
+  <script type="text/javascript">
+    window.onload = function () {
+      canvas = document.getElementById('mycanvas');
+      gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+      const pixelRatio = window.devicePixelRatio || 1;
+	    canvas.width  = pixelRatio * canvas.clientWidth;
+	    canvas.height = pixelRatio * canvas.clientHeight;
+	    gl.viewport(0, 0, canvas.width, canvas.height);
+
+      gl.clearColor(1.0, 1.0, 1.0, 1.0);
+      gl.lineWidth(1.0);
+
+      const vs_source = document.getElementById('vertexShader').text;
+      const vs = gl.createShader(gl.VERTEX_SHADER);
+      gl.shaderSource(vs, vs_source);
+      gl.compileShader(vs);
+
+      if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
+        alert(gl.getShaderInfoLog(vs));
+        gl.deleteShader(vs);
+      }
+
+      const fs_source = document.getElementById('fragmentShader').text;
+      const fs = gl.createShader(gl.FRAGMENT_SHADER);
+      gl.shaderSource(fs, fs_source);
+      gl.compileShader(fs);
+
+      if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
+        alert(gl.getShaderInfoLog(fs));
+        gl.deleteShader(fs);
+      }
+
+      var prog = gl.createProgram();
+      gl.attachShader(prog, vs);
+      gl.attachShader(prog, fs);
+      gl.linkProgram(prog);
+
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+        alert('Unable to initialize the shader program:', gl.getProgramInfoLog(prog));
+      }
+
+      var m = gl.getUniformLocation(prog, 'trans');
+      var matrix = [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1,
+      ];
+      gl.useProgram(prog);
+      gl.uniformMatrix4fv(m, false, matrix);
+
+      var position_array = [
+        -0.8, +0.4, 0.0,
+        +0.8, +0.4, 0.0,
+        +0.8, -0.4, 0.0,
+        -0.8, +0.4, 0.0,
+        +0.8, -0.4, 0.0,
+        -0.8, -0.4, 0.0,
+      ];
+
+      var color_array = [
+        1.0, 0.0, 0.0, 1.0,
+        0.0, 1.0, 0.0, 1.0,
+        0.0, 0.0, 1.0, 1.0,
+        1.0, 0.0, 0.0, 1.0,
+        0.0, 0.0, 1.0, 1.0,
+        1.0, 0.0, 1.0, 1.0,
+      ];
+
+      var position_buffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, position_buffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(position_array), gl.STATIC_DRAW);
+
+      var color_buffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, color_buffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(color_array), gl.STATIC_DRAW);
+
+      var p = gl.getAttribLocation(prog, 'pos');
+      gl.bindBuffer(gl.ARRAY_BUFFER, position_buffer);
+      gl.vertexAttribPointer(p, 3, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(p);
+
+      var c = gl.getAttribLocation(prog, 'clr');
+      gl.bindBuffer(gl.ARRAY_BUFFER, color_buffer);
+      gl.vertexAttribPointer(c, 4, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(c);
+
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.useProgram(prog);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    };
+  </script>
+  <style>
+    canvas {
+      width: 50%;
+      height: 50%;
+      margin: auto;
+      display: block;
+      border: 1px solid black;
+    }
+  </style>
+</head>
+<body>
+  <canvas id='mycanvas'></canvas>
+</body>
+</html>

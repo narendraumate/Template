@@ -1,0 +1,137 @@
+<html>
+    <head>
+        <title>Robothead</title>
+        <style>
+            body { margin: 0; }
+            canvas { width: 100%; height: 100% }
+        </style>
+    </head>
+    <body>
+        <script src="https://unpkg.com/three@0.90.0/build/three.js" type="text/javascript"></script>
+        <script src="https://unpkg.com/three@0.90.0/examples/js/controls/OrbitControls.js" type="text/javascript"></script>
+        
+        <script type="module">
+
+            var camera, scene, renderer, orbitControls;
+            var boxGeometrySolid, boxGeometryWireframe;
+
+            var init = function () {
+                camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.01, 500 );
+                orbitControls = new THREE.OrbitControls( camera );
+                camera.position.x = 25.0;
+                camera.position.y = 25.0;
+                camera.position.z = 25.0;
+                camera.lookAt( 0, 0, 0 );
+                orbitControls.update();
+
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color('white');
+                boxGeometrySolid = new THREE.BoxGeometry( 0.1, 0.1, 0.1 );
+                boxGeometryWireframe = new THREE.WireframeGeometry( new THREE.BoxGeometry( 1.0, 1.0, 1.0 ) );
+
+                var gridHelperXY = new THREE.GridHelper( 50, 1, 0x0000FF, 0x0000FF ); // done
+                var positionXY = new THREE.Vector3();
+                positionXY.set( 0, 0, 0 );
+                var rotationXY = new THREE.Quaternion();
+                rotationXY.setFromEuler( new THREE.Euler( 22.0 / 14.0, 0, 0, 'ZXY' ) );
+                var scaleXY = new THREE.Vector3();
+                scaleXY.set( 1, 1, 1 );
+                var matrixXY = new THREE.Matrix4();
+                matrixXY.compose( positionXY, rotationXY, scaleXY );
+                gridHelperXY.applyMatrix( matrixXY );
+                scene.add( gridHelperXY );
+
+                var gridHelperYZ = new THREE.GridHelper( 50, 1, 0xFF0000, 0xFF0000 ); // done
+                var positionYZ = new THREE.Vector3();
+                positionYZ.set( 0, 0, 0 );
+                var rotationYZ = new THREE.Quaternion();
+                rotationYZ.setFromEuler( new THREE.Euler( 0, 0, 22.0 / 14.0, 'ZXY' ) );
+                var scaleYZ = new THREE.Vector3();
+                scaleYZ.set( 1, 1, 1 );
+                var matrixYZ = new THREE.Matrix4();
+                matrixYZ.compose( positionYZ, rotationYZ, scaleYZ );
+                gridHelperYZ.applyMatrix( matrixYZ );
+                scene.add( gridHelperYZ );
+
+                var gridHelperZX = new THREE.GridHelper( 50, 1, 0x00FF00, 0x00FF00 ); // done
+                scene.add( gridHelperZX );
+
+                var axesHelper = new THREE.AxesHelper( 25 );
+                scene.add( axesHelper );
+
+                var materialWireframe = new THREE.LineBasicMaterial( { color: 0xffffff, linewidth: 2 } );
+                var materialSolid = new THREE.MeshBasicMaterial( {color: 0xffffff} );
+
+                var factor = 0.1;
+
+                var translation = new THREE.Vector3();
+                translation.set(10, +170.0 * factor, 0);
+                var translationMatrix = new THREE.Matrix4();
+                translationMatrix.makeTranslation( translation.x, translation.y, translation.z );
+
+                var rotation = new THREE.Quaternion();
+                rotation.setFromEuler( new THREE.Euler( 0, -(22 / 14), 0, 'ZXY' ) );
+                var rotationMatrix = new THREE.Matrix4();
+                rotationMatrix.makeRotationFromQuaternion( rotation );
+
+                var scale = new THREE.Vector3();
+                scale.set( 1, 1, 1 );
+                var scaleMatrix = new THREE.Matrix4();
+                scaleMatrix.makeScale( scale.x, scale.y, scale.z );
+
+                var result;
+                var headTransformStraight = new THREE.Matrix4();
+                headTransformStraight.set( 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ); headTransformStraight.transpose(); // input to set is expected as row major but everything is col major
+                headTransformStraight.multiplyMatrices( translationMatrix, headTransformStraight.multiplyMatrices( rotationMatrix, scaleMatrix ) ); // equivalent to .compose( translation, rotation, scale );
+                var headTransformInverted = new THREE.Matrix4();
+                headTransformInverted.getInverse( headTransformStraight, result );
+                
+                var boxInstanceSolid = new THREE.LineSegments( boxGeometryWireframe, materialWireframe );
+                boxInstanceSolid.applyMatrix( headTransformStraight );
+                scene.add( boxInstanceSolid );
+
+                var lEyeTransform = new THREE.Matrix4();
+                lEyeTransform.set( 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -3.2 * factor, 0, -6.8 * factor, 1 ); lEyeTransform.transpose(); // input to set is expected as row major but everything is col major
+                lEyeTransform.multiplyMatrices( headTransformStraight, lEyeTransform );
+                
+                //lEyeTransform.multiplyMatrices( headTransformInverted, lEyeTransform ); // try me
+                
+                var lBoxInstanceWireframe = new THREE.Mesh( boxGeometrySolid, materialSolid );
+                lBoxInstanceWireframe.applyMatrix( lEyeTransform );
+                scene.add( lBoxInstanceWireframe );
+                {
+                    var lCameraHelper = new THREE.CameraHelper( new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10 ) );
+                    lBoxInstanceWireframe.add( lCameraHelper );
+                }
+
+                var rEyeTransform = new THREE.Matrix4();
+                rEyeTransform.set( 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, +3.2 * factor, 0, -6.8 * factor, 1 ); rEyeTransform.transpose(); // input to set is expected as row major but everything is col major
+                rEyeTransform.multiplyMatrices( headTransformStraight, rEyeTransform );
+                
+                //rEyeTransform.multiplyMatrices( headTransformInverted, rEyeTransform ); // try me
+                
+                var rBoxInstanceWireframe = new THREE.Mesh( boxGeometrySolid, materialSolid );
+                rBoxInstanceWireframe.applyMatrix( rEyeTransform );
+                scene.add( rBoxInstanceWireframe );
+                {
+                    var rCameraHelper = new THREE.CameraHelper( new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10 ) );
+                    rBoxInstanceWireframe.add( rCameraHelper );
+                }
+
+                renderer = new THREE.WebGLRenderer( { antialias: true } );
+                renderer.setSize( window.innerWidth, window.innerHeight );
+                document.body.appendChild( renderer.domElement );
+            }
+
+            var animate = function () {
+                requestAnimationFrame( animate );
+                renderer.render( scene, camera );
+            }
+
+            init();
+            animate();
+
+            </script>
+    </body>
+</html>
+
